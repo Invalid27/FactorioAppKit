@@ -4,7 +4,17 @@ import Cocoa
 class GeneralRecipePickerViewController: NSViewController {
     weak var graphState: GraphState?
     
-    private var searchField: NSSearchField!
+    private lazy var searchField: NSSearchField = {
+        let field = NSSearchField()
+        field.placeholderString = "Search recipes..."
+        field.target = self
+        field.action = #selector(searchFieldChanged(_:))
+        field.sendsSearchStringImmediately = true
+        field.sendsWholeSearchString = false
+        field.translatesAutoresizingMaskIntoConstraints = false
+        return field
+    }()
+    
     private var categoryPopUp: NSPopUpButton!
     private var recyclingCheckbox: NSButton!
     private var tableView: NSTableView!
@@ -45,13 +55,14 @@ class GeneralRecipePickerViewController: NSViewController {
         filterRecipes()
     }
     
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        // Ensure search field has focus
+        view.window?.makeFirstResponder(searchField)
+    }
+    
     private func setupUI() {
-        // Search field
-        searchField = NSSearchField()
-        searchField.placeholderString = "Search recipes..."
-        searchField.target = self
-        searchField.action = #selector(searchFieldChanged(_:))
-        searchField.translatesAutoresizingMaskIntoConstraints = false
+        // Add search field (already configured via lazy var)
         view.addSubview(searchField)
         
         // Category selector
@@ -83,6 +94,7 @@ class GeneralRecipePickerViewController: NSViewController {
         tableView.allowsMultipleSelection = false
         tableView.headerView = nil
         tableView.rowHeight = 60
+        tableView.refusesFirstResponder = true  // Prevent table from stealing keyboard focus
         
         // Add columns
         let iconColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("icon"))
@@ -131,9 +143,6 @@ class GeneralRecipePickerViewController: NSViewController {
             addButton.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -20),
             addButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
         ])
-        
-        // Make search field first responder
-        view.window?.makeFirstResponder(searchField)
     }
     
     private func loadRecipes() {
@@ -171,13 +180,10 @@ class GeneralRecipePickerViewController: NSViewController {
                 }
             }
             
-            // Filter by search text
+            // Filter by search text - ONLY search recipe names
             if !searchText.isEmpty {
                 let searchLower = searchText.lowercased()
-                return recipe.name.lowercased().contains(searchLower) ||
-                       recipe.id.lowercased().contains(searchLower) ||
-                       recipe.inputs.keys.contains { $0.lowercased().contains(searchLower) } ||
-                       recipe.outputs.keys.contains { $0.lowercased().contains(searchLower) }
+                return recipe.name.lowercased().contains(searchLower)
             }
             
             return true
@@ -245,12 +251,13 @@ extension GeneralRecipePickerViewController: NSTableViewDataSource, NSTableViewD
             let imageView = NSImageView()
             imageView.imageScaling = .scaleProportionallyDown
             
+            // Use recipe name for icon lookup, not mainOutput
             let iconName = iconAssetName(for: recipe.name)
             if let icon = NSImage(named: iconName) {
                 imageView.image = icon
             } else {
                 // Create monogram
-                let monogram = createMonogram(for: recipe.mainOutput)
+                let monogram = createMonogram(for: recipe.name)
                 imageView.image = monogram
             }
             
