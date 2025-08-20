@@ -60,6 +60,17 @@ class GeneralRecipePickerViewController: NSViewController {
         // Ensure search field has focus
         view.window?.makeFirstResponder(searchField)
     }
+    override func keyDown(with event: NSEvent) {
+        // Handle Cmd+A for select all
+        if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "a" {
+            if view.window?.firstResponder == searchField.currentEditor() {
+                searchField.currentEditor()?.selectAll(nil)
+                return
+            }
+        }
+        super.keyDown(with: event)
+    }
+
     
     private func setupUI() {
         // Add search field (already configured via lazy var)

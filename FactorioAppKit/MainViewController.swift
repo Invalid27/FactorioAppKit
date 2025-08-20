@@ -87,8 +87,11 @@ class MainViewController: NSViewController {
                     break
                 }
             } else if event.keyCode == 51 { // Delete key
-                self.graphState.deleteSelectedNodes()
-                return nil
+                // Only handle delete if no sheet is active (recipe picker)
+                if self.view.window?.attachedSheet == nil {
+                    self.graphState.deleteSelectedNodes()
+                    return nil
+                }
             }
             
             return event
