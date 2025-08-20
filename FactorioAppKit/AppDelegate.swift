@@ -12,7 +12,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         windowController = WindowController()
         windowController?.showWindow(nil)
-        
         // Force the window to appear
         windowController?.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)

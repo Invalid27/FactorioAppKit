@@ -1,20 +1,28 @@
 import Cocoa
 
+// Custom search field to handle Cmd+A
+class RecipeSearchField: NSSearchField {
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "a" {
+            if let editor = self.currentEditor() {
+                editor.selectAll(nil)
+                return true
+            }
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+    
+    override func cancelOperation(_ sender: Any?) {
+        // Escape key pressed - close the window
+        self.window?.close()
+    }
+}
+
 // MARK: - Recipe Picker View Controller
 class GeneralRecipePickerViewController: NSViewController {
     weak var graphState: GraphState?
     
-    private lazy var searchField: NSSearchField = {
-        let field = NSSearchField()
-        field.placeholderString = "Search recipes..."
-        field.target = self
-        field.action = #selector(searchFieldChanged(_:))
-        field.sendsSearchStringImmediately = true
-        field.sendsWholeSearchString = false
-        field.translatesAutoresizingMaskIntoConstraints = false
-        return field
-    }()
-    
+    private var searchField: NSSearchField!
     private var categoryPopUp: NSPopUpButton!
     private var recyclingCheckbox: NSButton!
     private var tableView: NSTableView!
@@ -60,20 +68,15 @@ class GeneralRecipePickerViewController: NSViewController {
         // Ensure search field has focus
         view.window?.makeFirstResponder(searchField)
     }
-    override func keyDown(with event: NSEvent) {
-        // Handle Cmd+A for select all
-        if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "a" {
-            if view.window?.firstResponder == searchField.currentEditor() {
-                searchField.currentEditor()?.selectAll(nil)
-                return
-            }
-        }
-        super.keyDown(with: event)
-    }
-
     
     private func setupUI() {
-        // Add search field (already configured via lazy var)
+        // Search field - using custom subclass for Cmd+A support
+        searchField = RecipeSearchField()
+        searchField.placeholderString = "Search recipes..."
+        searchField.target = self
+        searchField.action = #selector(searchFieldChanged(_:))
+        searchField.sendsSearchStringImmediately = true
+        searchField.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(searchField)
         
         // Category selector
@@ -105,7 +108,7 @@ class GeneralRecipePickerViewController: NSViewController {
         tableView.allowsMultipleSelection = false
         tableView.headerView = nil
         tableView.rowHeight = 60
-        tableView.refusesFirstResponder = true  // Prevent table from stealing keyboard focus
+        tableView.refusesFirstResponder = true  // Prevent table from stealing focus
         
         // Add columns
         let iconColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("icon"))
@@ -267,7 +270,7 @@ extension GeneralRecipePickerViewController: NSTableViewDataSource, NSTableViewD
             if let icon = NSImage(named: iconName) {
                 imageView.image = icon
             } else {
-                // Create monogram
+                // Fall back to monogram using recipe name
                 let monogram = createMonogram(for: recipe.name)
                 imageView.image = monogram
             }
