@@ -245,7 +245,7 @@ extension GeneralRecipePickerViewController: NSTableViewDataSource, NSTableViewD
             let imageView = NSImageView()
             imageView.imageScaling = .scaleProportionallyDown
             
-            let iconName = iconAssetName(for: recipe.mainOutput)
+            let iconName = iconAssetName(for: recipe.name)
             if let icon = NSImage(named: iconName) {
                 imageView.image = icon
             } else {

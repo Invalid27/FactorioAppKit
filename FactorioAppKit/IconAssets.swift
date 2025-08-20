@@ -98,6 +98,7 @@ public let ICON_ASSETS: [String: String] = [
     "Coal Synthesis": "coal_synthesis",
     "Acid Neutralisation": "acid_neutralisation",
     "Steam Condensation": "steam_condensation",
+    
 
     // --- Barrels ---
     "Barrel": "barrel",
