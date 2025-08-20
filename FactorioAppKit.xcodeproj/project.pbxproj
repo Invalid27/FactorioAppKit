@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		655EC4B72E56843E00221B53 /* Main.backup in Resources */ = {isa = PBXBuildFile; fileRef = 655EC4B62E56843E00221B53 /* Main.backup */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		657D4B592E55F26F007F27C2 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,6 +28,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		655EC4B52E56843E00221B53 /* Main.storyboard */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = Main.storyboard; path = Base.lproj/Main.backup; sourceTree = "<group>"; };
 		657D4B472E55F26E007F27C2 /* FactorioAppKit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FactorioAppKit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		657D4B582E55F26F007F27C2 /* FactorioAppKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FactorioAppKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		657D4B622E55F26F007F27C2 /* FactorioAppKitUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FactorioAppKitUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -79,6 +84,7 @@
 				657D4B5B2E55F26F007F27C2 /* FactorioAppKitTests */,
 				657D4B652E55F26F007F27C2 /* FactorioAppKitUITests */,
 				657D4B482E55F26E007F27C2 /* Products */,
+				655EC4B62E56843E00221B53 /* Main.backup */,
 			);
 			sourceTree = "<group>";
 		};
@@ -212,6 +218,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				655EC4B72E56843E00221B53 /* Main.backup in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -267,6 +274,17 @@
 			targetProxy = 657D4B632E55F26F007F27C2 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		655EC4B62E56843E00221B53 /* Main.backup */ = {
+			isa = PBXVariantGroup;
+			children = (
+				655EC4B52E56843E00221B53 /* Main.storyboard */,
+			);
+			name = Main.backup;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		657D4B6A2E55F26F007F27C2 /* Debug */ = {
@@ -398,12 +416,12 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.daniel.FactorioAppKit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -424,12 +442,12 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.daniel.FactorioAppKit;
 				PRODUCT_NAME = "$(TARGET_NAME)";

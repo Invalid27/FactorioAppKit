@@ -1,23 +1,13 @@
 import Cocoa
 
-@main
+
 class AppDelegate: NSObject, NSApplicationDelegate {
-    var windowController: WindowController?
-    
-    func applicationWillFinishLaunching(_ notification: Notification) {
-        // This ensures your app runs as a regular GUI app
-        NSApp.setActivationPolicy(.regular)
-    }
-    
     func applicationDidFinishLaunching(_ notification: Notification) {
-        windowController = WindowController()
-        windowController?.showWindow(nil)
-        // Force the window to appear
-        windowController?.window?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-    }
-    
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        return true
+        let window = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 400, height: 300),
+                              styleMask: [.titled, .closable],
+                              backing: .buffered,
+                              defer: false)
+        window.title = "Test"
+        window.makeKeyAndOrderFront(nil)
     }
 }
