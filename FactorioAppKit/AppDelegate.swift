@@ -1,30 +1,24 @@
-//
-//  AppDelegate.swift
-//  FactorioAppKit
-//
-//  Created by Daniel on 8/20/25.
-//
-
 import Cocoa
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
-
+    var windowController: WindowController?
     
-
-
-    func applicationDidFinishLaunching(_ aNotification: Notification) {
-        // Insert code here to initialize your application
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // This ensures your app runs as a regular GUI app
+        NSApp.setActivationPolicy(.regular)
     }
-
-    func applicationWillTerminate(_ aNotification: Notification) {
-        // Insert code here to tear down your application
+    
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        windowController = WindowController()
+        windowController?.showWindow(nil)
+        
+        // Force the window to appear
+        windowController?.window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
-
-    func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
+    
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return true
     }
-
-
 }
-
