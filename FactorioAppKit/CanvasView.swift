@@ -277,56 +277,253 @@ class CanvasView: NSView {
     private func drawPorts(for node: Node, at position: NSPoint, scale: CGFloat, in context: CGContext) {
         guard let recipe = RECIPES.first(where: { $0.id == node.recipeID }) else { return }
         
-        let portSize = Constants.portSize * scale
         let nodeWidth = Constants.nodeMinWidth * scale
-        let spacing: CGFloat = 20 * scale
         
-        // Draw input ports
-        var yOffset: CGFloat = 20 * scale
-        for (item, _) in recipe.inputs {
-            let portCenter = NSPoint(
-                x: position.x - nodeWidth/2,
-                y: position.y + yOffset
+        // Calculate spacing based on number of ports
+        let maxInputs = recipe.inputs.count
+        let maxOutputs = recipe.outputs.count
+        let maxPorts = max(maxInputs, maxOutputs)
+        
+        // Adjust spacing to fit all ports within node height
+        let portHeight: CGFloat = 24 * scale
+        let portSpacing: CGFloat = 8 * scale
+        let totalPortsHeight = CGFloat(maxPorts) * portHeight + CGFloat(maxPorts - 1) * portSpacing
+        let startY = totalPortsHeight / 2
+        
+        // Save graphics state for drawing
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: false)
+        
+        // Draw input ports (left side)
+        for (index, (itemName, amount)) in recipe.inputs.enumerated() {
+            let yOffset = startY - CGFloat(index) * (portHeight + portSpacing)
+            let portPosition = NSPoint(
+                x: position.x - nodeWidth/2 + 5 * scale,
+                y: position.y + yOffset - portHeight/2
             )
             
-            drawPort(at: portCenter, size: portSize, isInput: true,
-                    item: item, in: context)
-            yOffset -= spacing
+            // Check if connected for visual feedback
+            let isConnected = graphState?.edges.contains { edge in
+                edge.toNode == node.id && edge.item == itemName
+            } ?? false
+            
+            drawPortBadge(item: itemName, amount: amount, at: portPosition,
+                         isInput: true, isConnected: isConnected,
+                         width: 60 * scale, height: portHeight,
+                         scale: scale, in: context)
         }
         
-        // Draw output ports
-        yOffset = 20 * scale
-        for (item, _) in recipe.outputs {
-            let portCenter = NSPoint(
-                x: position.x + nodeWidth/2,
-                y: position.y + yOffset
+        // Draw output ports (right side)
+        for (index, (itemName, amount)) in recipe.outputs.enumerated() {
+            let yOffset = startY - CGFloat(index) * (portHeight + portSpacing)
+            let portWidth: CGFloat = 60 * scale
+            let portPosition = NSPoint(
+                x: position.x + nodeWidth/2 - portWidth - 5 * scale,
+                y: position.y + yOffset - portHeight/2
             )
             
-            drawPort(at: portCenter, size: portSize, isInput: false,
-                    item: item, in: context)
-            yOffset -= spacing
+            // Check if connected for visual feedback
+            let isConnected = graphState?.edges.contains { edge in
+                edge.fromNode == node.id && edge.item == itemName
+            } ?? false
+            
+            drawPortBadge(item: itemName, amount: amount, at: portPosition,
+                         isInput: false, isConnected: isConnected,
+                         width: portWidth, height: portHeight,
+                         scale: scale, in: context)
         }
+        
+        NSGraphicsContext.restoreGraphicsState()
     }
     
-    private func drawPort(at center: NSPoint, size: CGFloat, isInput: Bool,
-                         item: String, in context: CGContext) {
-        let rect = CGRect(x: center.x - size/2, y: center.y - size/2,
-                         width: size, height: size)
+    private func drawPortBadge(item: String, amount: Double, at position: NSPoint,
+                               isInput: Bool, isConnected: Bool,
+                               width: CGFloat, height: CGFloat,
+                               scale: CGFloat, in context: CGContext) {
+        let rect = NSRect(x: position.x, y: position.y, width: width, height: height)
         
-        // Check if connected
-        let isConnected = graphState?.edges.contains { edge in
-            edge.item == item && (isInput ?
-                graphState?.nodes[edge.toNode] != nil :
-                graphState?.nodes[edge.fromNode] != nil)
-        } ?? false
+        // Draw background with gradient
+        let path = NSBezierPath(roundedRect: rect, xRadius: height/2, yRadius: height/2)
         
-        context.setFillColor(isConnected ?
-            NSColor.orange.cgColor : NSColor.gray.cgColor)
-        context.fillEllipse(in: rect)
+        context.saveGState()
         
-        context.setStrokeColor(NSColor.white.withAlphaComponent(0.3).cgColor)
-        context.setLineWidth(1)
-        context.strokeEllipse(in: rect)
+        // Create gradient based on port type and connection status
+        let baseColor: NSColor
+        let textColor: NSColor
+        
+        if isInput {
+            // Input ports - darker brownish
+            if isConnected {
+                baseColor = NSColor(red: 0.5, green: 0.35, blue: 0.2, alpha: 1.0)
+            } else {
+                baseColor = NSColor(red: 0.3, green: 0.25, blue: 0.2, alpha: 1.0)
+            }
+            textColor = NSColor(red: 0.9, green: 0.85, blue: 0.8, alpha: 1.0)
+        } else {
+            // Output ports - lighter brownish
+            if isConnected {
+                baseColor = NSColor(red: 0.55, green: 0.4, blue: 0.25, alpha: 1.0)
+            } else {
+                baseColor = NSColor(red: 0.35, green: 0.3, blue: 0.25, alpha: 1.0)
+            }
+            textColor = NSColor(red: 1.0, green: 0.95, blue: 0.9, alpha: 1.0)
+        }
+        
+        // Draw gradient background
+        if let gradient = NSGradient(colors: [
+            baseColor.blended(withFraction: 0.2, of: .white) ?? baseColor,
+            baseColor,
+            baseColor.blended(withFraction: 0.2, of: .black) ?? baseColor
+        ]) {
+            gradient.draw(in: path, angle: -90)
+        }
+        
+        // Draw subtle border
+        context.setStrokeColor(NSColor.black.withAlphaComponent(0.3).cgColor)
+        context.setLineWidth(0.5 * scale)
+        context.addPath(path.cgPath)
+        context.strokePath()
+        
+        context.restoreGState()
+        
+        // Draw amount and icon
+        let iconSize = height * 0.7
+        let padding = height * 0.15
+        
+        // Draw amount text (e.g., "2×")
+        let amountText: String
+        if amount == Double(Int(amount)) {
+            amountText = "\(Int(amount))×"
+        } else {
+            amountText = String(format: "%.1f×", amount)
+        }
+        
+        let textAttrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 10 * scale, weight: .medium),
+            .foregroundColor: textColor
+        ]
+        
+        let textString = NSAttributedString(string: amountText, attributes: textAttrs)
+        let textSize = textString.size()
+        
+        // Position text on the left side of the badge
+        let textX = position.x + padding
+        let textY = position.y + (height - textSize.height) / 2
+        textString.draw(at: NSPoint(x: textX, y: textY))
+        
+        // Try to get and draw the icon
+        let iconName = getIconName(for: item)
+        
+        // Debug print to see what icon names we're looking for
+        print("Looking for icon: '\(iconName)' for item: '\(item)'")
+        
+        if let icon = NSImage(named: iconName) {
+            // Position icon on the right side of the badge
+            let iconRect = NSRect(
+                x: position.x + width - iconSize - padding,
+                y: position.y + (height - iconSize) / 2,
+                width: iconSize,
+                height: iconSize
+            )
+            icon.draw(in: iconRect)
+        } else {
+            // Try alternate icon naming (with spaces replaced by hyphens)
+            let alternateIconName = item.replacingOccurrences(of: " ", with: "-").lowercased()
+            if let icon = NSImage(named: alternateIconName) {
+                let iconRect = NSRect(
+                    x: position.x + width - iconSize - padding,
+                    y: position.y + (height - iconSize) / 2,
+                    width: iconSize,
+                    height: iconSize
+                )
+                icon.draw(in: iconRect)
+            } else {
+                // If still no icon available, show item name in smaller text
+                let itemTextAttrs: [NSAttributedString.Key: Any] = [
+                    .font: NSFont.systemFont(ofSize: 7 * scale, weight: .regular),
+                    .foregroundColor: textColor.withAlphaComponent(0.7)
+                ]
+                
+                let itemString = NSAttributedString(string: item, attributes: itemTextAttrs)
+                let itemTextSize = itemString.size()
+                
+                // Position item name after the amount
+                let itemX = textX + textSize.width + 4 * scale
+                let itemY = position.y + (height - itemTextSize.height) / 2
+                
+                // Only draw if it fits
+                if itemX + itemTextSize.width < position.x + width - padding {
+                    itemString.draw(at: NSPoint(x: itemX, y: itemY))
+                }
+            }
+        }
+    }
+
+    
+    // Helper function to get icon name from item name
+    private func getIconName(for item: String) -> String {
+        // First, try to normalize the item name by converting to lowercase and replacing spaces with hyphens
+        let normalizedItem = item.replacingOccurrences(of: " ", with: "-").lowercased()
+        
+        // This maps item names to their icon asset names
+        // Using the normalized format that should match your asset names
+        switch normalizedItem {
+        // Ores
+        case "iron-ore": return "iron-ore"
+        case "copper-ore": return "copper-ore"
+        case "coal": return "coal"
+        case "stone": return "stone"
+        case "uranium-ore": return "uranium-ore"
+        
+        // Plates
+        case "iron-plate": return "iron-plate"
+        case "copper-plate": return "copper-plate"
+        case "steel-plate": return "steel-plate"
+        
+        // Intermediate products
+        case "iron-gear-wheel": return "iron-gear-wheel"
+        case "copper-cable": return "copper-cable"
+        case "electronic-circuit", "green-circuit": return "electronic-circuit"
+        case "advanced-circuit", "red-circuit": return "advanced-circuit"
+        case "processing-unit", "blue-circuit": return "processing-unit"
+        case "plastic-bar", "plastic": return "plastic-bar"
+        case "sulfur": return "sulfur"
+        case "battery": return "battery"
+        case "engine-unit": return "engine-unit"
+        case "electric-engine-unit": return "electric-engine-unit"
+        case "flying-robot-frame": return "flying-robot-frame"
+        case "low-density-structure": return "low-density-structure"
+        case "rocket-fuel": return "rocket-fuel"
+        case "rocket-control-unit": return "rocket-control-unit"
+        case "satellite": return "satellite"
+        case "uranium-235": return "uranium-235"
+        case "uranium-238": return "uranium-238"
+        case "nuclear-fuel": return "nuclear-fuel"
+        
+        // Fluids
+        case "water": return "water"
+        case "crude-oil": return "crude-oil"
+        case "heavy-oil": return "heavy-oil"
+        case "light-oil": return "light-oil"
+        case "petroleum-gas": return "petroleum-gas"
+        case "lubricant": return "lubricant"
+        case "sulfuric-acid": return "sulfuric-acid"
+        case "steam": return "steam"
+        
+        // Other items
+        case "wood": return "wood"
+        case "pipe": return "pipe"
+        case "concrete": return "concrete"
+        case "stone-brick": return "stone-brick"
+        case "rail": return "rail"
+        case "solid-fuel": return "solid-fuel"
+        
+        // If no specific mapping found, return the normalized name
+        // This allows the system to try finding an icon with that exact name
+        default:
+            // Also try without hyphens as a fallback
+            return normalizedItem
+        }
     }
     
     private func drawEdges(in context: CGContext) {
@@ -416,7 +613,7 @@ class CanvasView: NSView {
         }
         
         // Check if we hit a port
-        if let (node, port, item) = portAt(point: point) {
+        if let (node, port, portItem) = portAt(point: point) {
             isDraggingWire = true
             wireStart = (nodeID: node.id, portID: port, point: point)
             wireEnd = point
@@ -579,7 +776,6 @@ class CanvasView: NSView {
         
         let scale = graphState.canvasScale
         let offset = graphState.canvasOffset
-        let portSize = Constants.portSize * scale
         
         for node in graphState.nodes.values {
             guard let recipe = RECIPES.first(where: { $0.id == node.recipeID }) else { continue }
@@ -587,50 +783,52 @@ class CanvasView: NSView {
             let nodeX = node.x * scale + offset.width
             let nodeY = node.y * scale + offset.height
             let nodeWidth = Constants.nodeMinWidth * scale
-            let spacing: CGFloat = 20 * scale
             
-            // Check input ports
-            var yOffset: CGFloat = 20 * scale
-            for (item, _) in recipe.inputs {
-                let portCenter = NSPoint(
-                    x: nodeX - nodeWidth/2,
-                    y: nodeY + yOffset
-                )
+            // Port dimensions
+            let portWidth: CGFloat = 60 * scale
+            let portHeight: CGFloat = 24 * scale
+            let portSpacing: CGFloat = 8 * scale
+            
+            // Calculate port positions for inputs
+            let maxInputs = recipe.inputs.count
+            if maxInputs > 0 {
+                let totalInputHeight = CGFloat(maxInputs) * portHeight + CGFloat(maxInputs - 1) * portSpacing
+                let inputStartY = totalInputHeight / 2
                 
-                let portRect = NSRect(
-                    x: portCenter.x - portSize/2,
-                    y: portCenter.y - portSize/2,
-                    width: portSize,
-                    height: portSize
-                )
-                
-                if portRect.contains(point) {
-                    return (node, UUID(), item)
+                for (index, (itemName, _)) in recipe.inputs.enumerated() {
+                    let yOffset = inputStartY - CGFloat(index) * (portHeight + portSpacing)
+                    let portRect = NSRect(
+                        x: nodeX - nodeWidth/2 + 5 * scale,
+                        y: nodeY + yOffset - portHeight/2,
+                        width: portWidth,
+                        height: portHeight
+                    )
+                    
+                    if portRect.contains(point) {
+                        return (node, UUID(), itemName)
+                    }
                 }
-                
-                yOffset -= spacing
             }
             
-            // Check output ports
-            yOffset = 20 * scale
-            for (item, _) in recipe.outputs {
-                let portCenter = NSPoint(
-                    x: nodeX + nodeWidth/2,
-                    y: nodeY + yOffset
-                )
+            // Calculate port positions for outputs
+            let maxOutputs = recipe.outputs.count
+            if maxOutputs > 0 {
+                let totalOutputHeight = CGFloat(maxOutputs) * portHeight + CGFloat(maxOutputs - 1) * portSpacing
+                let outputStartY = totalOutputHeight / 2
                 
-                let portRect = NSRect(
-                    x: portCenter.x - portSize/2,
-                    y: portCenter.y - portSize/2,
-                    width: portSize,
-                    height: portSize
-                )
-                
-                if portRect.contains(point) {
-                    return (node, UUID(), item)
+                for (index, (itemName, _)) in recipe.outputs.enumerated() {
+                    let yOffset = outputStartY - CGFloat(index) * (portHeight + portSpacing)
+                    let portRect = NSRect(
+                        x: nodeX + nodeWidth/2 - portWidth - 5 * scale,
+                        y: nodeY + yOffset - portHeight/2,
+                        width: portWidth,
+                        height: portHeight
+                    )
+                    
+                    if portRect.contains(point) {
+                        return (node, UUID(), itemName)
+                    }
                 }
-                
-                yOffset -= spacing
             }
         }
         
@@ -796,10 +994,17 @@ extension NSBezierPath {
                 path.move(to: points[0])
             case .lineTo:
                 path.addLine(to: points[0])
-            case .curveTo:
+            case .curveTo, .cubicCurveTo:
                 path.addCurve(to: points[2], control1: points[0], control2: points[1])
             case .closePath:
                 path.closeSubpath()
+            case .quadraticCurveTo:
+                let current = path.currentPoint
+                let c1 = CGPoint(x: (current.x + 2 * points[0].x) / 3,
+                               y: (current.y + 2 * points[0].y) / 3)
+                let c2 = CGPoint(x: (2 * points[0].x + points[1].x) / 3,
+                               y: (2 * points[0].y + points[1].y) / 3)
+                path.addCurve(to: points[1], control1: c1, control2: c2)
             @unknown default:
                 break
             }
